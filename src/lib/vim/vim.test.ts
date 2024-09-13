@@ -95,7 +95,7 @@ describe('vim', () => {
 
       vim.keyPress('$');
 
-      expect(vim.getCursorPos()).toEqual({ x: vim.file.lineLength(vim.y) - 1, y: 0 });
+      expect(vim.getCursorPos()).toEqual({ x: vim.currentLine().length - 1, y: 0 });
 
       vim.keyPress('0');
 
@@ -113,7 +113,7 @@ describe('vim', () => {
       vim.keyPress('2');
       vim.keyPress('$');
 
-      expect(vim.getCursorPos()).toEqual({ x: vim.file.lineLength(vim.y) - 1, y: 1 });
+      expect(vim.getCursorPos()).toEqual({ x: vim.currentLine().length - 1, y: 1 });
     });
   });
 

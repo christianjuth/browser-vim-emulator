@@ -10,7 +10,7 @@ export class File {
   }
 
   lineLength(y: number) {
-    return this.lines[y].length;
+    return this.getLine(y).length;
   }
 
   deleteSelection(start: { x: number, y: number }, end: { x: number, y: number }) {
@@ -45,6 +45,10 @@ export class File {
 
   getLine(y: number) {
     return this.lines[y];
+  }
+
+  getLines() {
+    return this.lines.slice();
   }
 }
 

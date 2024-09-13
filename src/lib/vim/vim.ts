@@ -32,9 +32,17 @@ class State {
     this.x = clamp(0, this.file.lineLength(this.y) - 1, xAsNumber);
   }
 
+  getX() {
+    return clamp(0, this.file.lineLength(this.y) - 1, this.x);
+  }
+
   setY(y: number | ((y: number) => number)) {
     const yAsNumber = typeof y === 'function' ? y(this.y) : y;
     this.y = clamp(0, this.file.lineCount() - 1, yAsNumber);
+  }
+
+  getY() {
+    return clamp(0, this.file.lineCount() - 1, this.y);
   }
 }
 
@@ -50,19 +58,19 @@ const MOTIONS: {
       switch (motion) {
         case 'h':
         case 'ArrowLeft':
-          state.x = Math.max(0, state.x - count);
+          state.setX(x => x - count);
           break;
         case 'j':
         case 'ArrowDown':
-          state.y = Math.min(state.file.lineCount() - 1, state.y + count);
+          state.setY(y => y + count);
           break;
         case 'k':
         case 'ArrowUp':
-          state.y = Math.max(0, state.y - count);
+          state.setY(y => y - count);
           break;
         case 'l':
         case 'ArrowRight':
-          state.x = Math.min(state.file.lineLength(state.y) - 1, state.x + count);
+          state.setX(x => x + count);
           break;
       }
     }
@@ -72,11 +80,11 @@ const MOTIONS: {
     handler: (state: State, match: RegExpMatchArray) => {
       const line = match[1] ? parseInt(match[1]) : undefined;
       if (line) {
-        state.y = Math.min(state.file.lineCount() - 1, line - 1);
+        state.setY(line - 1);
       } else if (match[2] === 'gg') {
-        state.y = 0;
+        state.setY(0);
       } else {
-        state.y = state.file.lineCount() - 1;
+        state.setY(state.file.lineCount() - 1);
       }
     }
   },
@@ -85,7 +93,7 @@ const MOTIONS: {
     handler: (state: State, match: RegExpMatchArray) => {
       const count = match[1] ? parseInt(match[1]) : undefined;
       if (count) {
-        state.setY(y => y + (count - 1));
+        state.setY(y => y + count - 1);
       }
       state.setX(state.file.lineLength(state.y) - 1);
     }
@@ -93,7 +101,7 @@ const MOTIONS: {
   {
     matcher: /(?<![0-9])(0)$/,
     handler: (state: State) => {
-      state.x = 0;
+      state.setX(0);
     }
   }
 ]
@@ -108,11 +116,11 @@ const ACTIONS: {
       const count = match[1] ? parseInt(match[1]) : 1;
       
       state.file.deleteSelection({
-        x: state.x, 
-        y: state.y
+        x: state.getX(), 
+        y: state.getY(),
       }, {
-        x: state.x + count - 1, 
-        y: state.y
+        x: state.getX() + count - 1, 
+        y: state.getY(),
       })
 
       return state;
@@ -176,18 +184,10 @@ export class Vim {
     this.state = new State(new File(file));
   }
 
-  get x() {
-    return this.state.x;
+  currentLine() {
+    return this.file.getLine(this.state.getY());
   }
-  get y() {
-    return this.state.y;
-  }
-  set x(x: number) {
-    this.state.x = x;
-  }
-  set y(y: number) {
-    this.state.y = y;
-  }
+
   get file() {
     return this.state.file;
   }
@@ -199,14 +199,18 @@ export class Vim {
     this.state = mutator(newState);
   }
 
+  getLines() {
+    return this.file.getLines();
+  }
+
   toString() {
     return this.file.toString()
   }
 
   getCursorPos() {
     return {
-      x: Math.min(this.file.lineLength(this.y) - 1, this.x),
-      y: this.y
+      x: this.state.getX(),
+      y: this.state.getY(),
     }
   }
 

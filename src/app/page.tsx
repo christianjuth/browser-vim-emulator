@@ -1,6 +1,7 @@
 "use client";
 
 import { useVim } from "@/lib/vim/hooks";
+import { Fragment } from "react";
 
 const INIT_FILE = 
 `# Welcome to Vim!
@@ -18,18 +19,42 @@ const INIT_FILE =
 export default function Home() {
   const vim = useVim(INIT_FILE);
 
+  const lines = vim.getLines();
+
+  const pos = vim.getCursorPos();
+
   return (
-    <div className="relative font-mono">
-      <pre className="leading-[1em]">
-        {vim.toString()}
-      </pre>
-      <div 
-        className="h-[1em] w-[1ch] bg-white absolute" 
-        style={{
-          top: `${vim.getCursorPos().y}em`,
-          left: `${vim.getCursorPos().x}ch`,
-        }}
-      />
+    <div className="h-[100svh] py-10">
+      <div className="h-full flex flex-col justify-between max-w-4xl mx-auto border bg-card">
+        <div className="grid grid-cols-[min-content,1fr] leading-[1em] gap-x-2 font-mono p-3 overflow-hidden">
+          {lines.map((line, i) => (
+            <Fragment key={line}>
+              <div className="text-right text-muted-foreground">{i + 1}</div>
+              <pre style={{ gridRowStart: i+1 }} className="col-start-2">
+                {line}
+              </pre>
+            </Fragment>
+          ))}
+
+          <div className="col-start-2 row-start-1 relative">
+            <div 
+              className="h-[1em] w-[1ch] bg-foreground/90 absolute" 
+              style={{
+                top: `${vim.getCursorPos().y}em`,
+                left: `${vim.getCursorPos().x}ch`,
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="p-3 flex flex-row justify-between text-sm">
+          <div/>
+
+          <div className="bg-foreground text-background px-2 leading-tight">
+            {pos.x+1}:{pos.y+1}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
