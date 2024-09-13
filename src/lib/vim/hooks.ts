@@ -2,7 +2,7 @@ import { Vim } from "./vim";
 import { useEffect, useRef, useState } from "react";
 
 export function useVim(initFile: string) {
-  const [_, setSignal] = useState(0);
+  const [, setSignal] = useState(0);
 
   const vim = useRef(new Vim({
     file: initFile,

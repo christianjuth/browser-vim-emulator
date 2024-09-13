@@ -25,7 +25,7 @@ export class File {
   
   getSelection(start: { x: number, y: number }, end: { x: number, y: number }) {
     let y = 0
-    let selection = []
+    const selection = []
     for (const line of this.lines) {
       if (y >= start.y && y <= end.y) {
         selection.push(line.slice(start.x, end.x + 1))
