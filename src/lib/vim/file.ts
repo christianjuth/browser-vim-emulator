@@ -1,5 +1,9 @@
+function isNotNull<T>(value: T | null): value is T {
+  return value !== null;
+}
+
 export class File {
-  private lines: string[];
+  private lines: (string | null)[];
 
   constructor(file: string | string[]) {
     this.lines = typeof file === 'string' ? file.split('\n') : file.slice();
@@ -21,8 +25,13 @@ export class File {
 
     let y = 0
     for (const line of this.lines) {
+      if (line === null) {
+        y++
+        continue;
+      }
+
       if (y >= minY && y <= maxY) {
-        if (minX === 0 && maxX === line.length - 1) {
+        if (minX === 0 && maxX === line.length - 1 && removeEmptyLines) {
           this.lines[y] = null;
         } else {
           this.lines[y] = line.slice(0, minX) + line.slice(maxX + 1)
@@ -40,7 +49,7 @@ export class File {
     let y = 0
     const selection = []
     for (const line of this.lines) {
-      if (y >= start.y && y <= end.y) {
+      if (line !== null && y >= start.y && y <= end.y) {
         selection.push(line.slice(start.x, end.x + 1))
       }
       y++ 
@@ -53,7 +62,7 @@ export class File {
   }
 
   clone() {
-    return new File(this.lines);
+    return new File(this.lines.filter(isNotNull));
   }
 
   getLine(y: number) {
@@ -61,7 +70,7 @@ export class File {
   }
 
   getLines() {
-    return this.lines.slice();
+    return this.lines.slice().filter(isNotNull);
   }
 }
 
