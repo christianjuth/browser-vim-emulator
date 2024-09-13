@@ -118,21 +118,22 @@ describe('vim', () => {
   });
 
   describe('deletion', () => {
+    const vim = new Vim({ file: TEST_FILE });
     
     test('x', () => {
-      const vim = new Vim({ file: TEST_FILE });
-
       expect(vim.getCursorPos()).toEqual({ x: 0, y: 0 });
 
       vim.keyPress('x');
 
       expect(vim.file.getLine(0)).toBe('he quick brown fox');
 
+    });
+
+    test('2x', () => {
       vim.keyPress('2');
       vim.keyPress('x');
 
       expect(vim.file.getLine(0)).toBe(' quick brown fox');
-
     });
 
   });
@@ -151,6 +152,22 @@ describe('vim', () => {
       expect(vim.file.getLine(0)).toBe('The quick brown fox');
       vim.keyPress(SpecialKeys.Ctrl+'r');
       expect(vim.file.getLine(0)).toBe('he quick brown fox');
+    });
+
+    test('4u', () => {
+      vim.keyPress('x');
+      vim.keyPress('x');
+      vim.keyPress('x');
+      expect(vim.file.getLine(0)).toBe('quick brown fox');
+      vim.keyPress('4');
+      vim.keyPress('u');
+      expect(vim.file.getLine(0)).toBe('The quick brown fox');
+    })
+
+    test(`4${SpecialKeys.Ctrl}r`, () => {
+      vim.keyPress('4');
+      vim.keyPress(`${SpecialKeys.Ctrl}r`);
+      expect(vim.file.getLine(0)).toBe('quick brown fox');
     });
 
   });

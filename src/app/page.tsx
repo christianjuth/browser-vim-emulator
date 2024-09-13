@@ -50,8 +50,8 @@ export default function Home() {
         <div className="p-3 flex flex-row justify-between text-sm">
           <div/>
 
-          <div className="bg-foreground text-background px-2 leading-tight">
-            {pos.x+1}:{pos.y+1}
+          <div className="bg-foreground/75 text-background px-2 leading-tight min-w-14 flex flex-row">
+            <span className="flex-1 text-right">{pos.y+1}</span>:<span className="flex-1">{pos.x+1}</span>
           </div>
         </div>
       </div>
