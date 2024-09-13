@@ -10,17 +10,30 @@ export class File {
   }
 
   lineLength(y: number) {
-    return this.getLine(y).length;
+    return this.getLine(y)?.length ?? 0;
   }
 
-  deleteSelection(start: { x: number, y: number }, end: { x: number, y: number }) {
+  deleteSelection(start: { x: number, y: number }, end: { x: number, y: number }, removeEmptyLines = false) {
+    const minY = Math.min(start.y, end.y);
+    const maxY = Math.max(start.y, end.y);
+    const minX = Math.min(start.x, end.x);
+    const maxX = Math.max(start.x, end.x);
+
     let y = 0
     for (const line of this.lines) {
-      if (y >= start.y && y <= end.y) {
-        this.lines[y] = line.slice(0, start.x) + line.slice(end.x + 1)
+      if (y >= minY && y <= maxY) {
+        if (minX === 0 && maxX === line.length - 1) {
+          this.lines[y] = null;
+        } else {
+          this.lines[y] = line.slice(0, minX) + line.slice(maxX + 1)
+        }
       }
       y++ 
     }
+  }
+
+  cleanup() {
+    this.lines = this.lines.filter(Boolean);
   }
   
   getSelection(start: { x: number, y: number }, end: { x: number, y: number }) {

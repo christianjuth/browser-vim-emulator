@@ -2,9 +2,24 @@ import { File } from "./file"
 
 export enum SpecialKeys {
   Ctrl = 'Ctrl-',
-  Shift = 'Shift',
+  Shift = 'Shift-',
   Alt = 'Alt',
   Meta = 'Meta',
+}
+
+export enum Mode {
+  Normal = 'normal',
+  Insert = 'insert',
+  Visual = 'visual',
+  VisualLine = 'visual line',
+  VisualBlock = 'visual block',
+}
+
+type HighlightSelection = {
+  x1: number,
+  x2: number,
+  y1: number,
+  y2: number,
 }
 
 function clamp(min: number, max: number, value: number) {
@@ -108,20 +123,39 @@ const MOTIONS: {
 
 const ACTIONS: {
   matcher: RegExp,
-  handler: (state: State, match: RegExpMatchArray) => State
+  handler: (
+    state: State, 
+    match: RegExpMatchArray, 
+    mode: Mode,
+    highlights?: HighlightSelection[]
+  ) => State
 }[] = [
   {
     matcher: /([0-9]*)(x)$/,
-    handler: (state, match) => {
+    handler: (state, match, mode, highlights) => {
       const count = match[1] ? parseInt(match[1]) : 1;
-      
-      state.file.deleteSelection({
-        x: state.getX(), 
-        y: state.getY(),
-      }, {
-        x: state.getX() + count - 1, 
-        y: state.getY(),
-      })
+
+      if (highlights) {
+        for (const highlight of highlights) {
+          state.file.deleteSelection({
+            x: highlight.x1,
+            y: highlight.y1,
+          }, {
+            x: highlight.x2,
+            y: highlight.y2,  
+          }, mode === Mode.VisualLine)
+        }
+      } else {
+        state.file.deleteSelection({
+          x: state.getX(),
+          y: state.getY(),
+        }, {
+          x: state.getX() + count - 1,
+          y: state.getY(),
+        })
+      }
+
+      state.file.cleanup();
 
       return state;
     }
@@ -173,6 +207,9 @@ export class Vim {
 
   stateChangeListener?: () => void;
 
+  visualSelectionStartState?: State;
+  private mode = Mode.Normal;
+
   constructor({ 
     file, 
     onStateChange 
@@ -219,14 +256,36 @@ export class Vim {
     if (this.keyBuffer.length >= 1) {
       this.processKeyBuffer();
     }
+    this.notifyStateChange();
   }
 
-  processKeyBuffer() {
+  private processKeyBuffer() {
     let foundMatch = false;
 
-    if (/Excape$/.test(this.keyBuffer)) {
+    if (/Escape/.test(this.keyBuffer)) {
+      this.visualSelectionStartState = undefined;
       this.keyBuffer = "";
-      return
+      this.mode = Mode.Normal;
+      return;
+    } else if (this.mode === Mode.Normal && /i$/.test(this.keyBuffer)) {
+      this.mode = Mode.Insert;
+      this.keyBuffer = "";
+      return;
+    } else if (this.mode === Mode.Normal && /Ctrl-v$/.test(this.keyBuffer)) {
+      this.visualSelectionStartState = this.state.clone();
+      this.mode = Mode.VisualBlock;
+      this.keyBuffer = "";
+      return;
+    } else if (this.mode === Mode.Normal && /Shift-V$/.test(this.keyBuffer)) {
+      this.visualSelectionStartState = this.state.clone();
+      this.mode = Mode.VisualLine;
+      this.keyBuffer = "";
+      return;
+    } else if (this.mode === Mode.Normal && /v$/.test(this.keyBuffer)) {
+      this.visualSelectionStartState = this.state.clone();
+      this.mode = Mode.Visual;
+      this.keyBuffer = "";
+      return;
     }
 
     for (const motion of MOTIONS) {
@@ -243,7 +302,8 @@ export class Vim {
       if (action.matcher.test(this.keyBuffer)) {
         foundMatch = true;
         const match = this.keyBuffer.match(action.matcher)!;
-        this.mutateState((state) => action.handler(state, match));
+        this.mutateState((state) => action.handler(state, match, this.mode, this.getHighlighted()));
+        this.visualSelectionStartState = undefined;
       }
     }
 
@@ -260,8 +320,6 @@ export class Vim {
     if (foundMatch) {
       this.keyBuffer = "";
     }
-
-    this.notifyStateChange();
   }
 
   registerKeyListeners() {
@@ -279,6 +337,9 @@ export class Vim {
         if (e.ctrlKey) {
           key = SpecialKeys.Ctrl + key;
         }
+        if (e.shiftKey) {
+          key = SpecialKeys.Shift + key;
+        }
         this.keyPress(key);
       }
     }
@@ -291,5 +352,56 @@ export class Vim {
 
   notifyStateChange() {
     this.stateChangeListener?.();
+  }
+
+  getMode() {
+    return this.mode;
+  }
+
+  getHighlighted(): HighlightSelection[] | undefined {
+    const startState = this.visualSelectionStartState;
+
+    if (!startState) {
+      return undefined;
+    }
+
+    const y1 = Math.min(startState.getY(), this.state.getY());
+    const y2 = Math.max(startState.getY(), this.state.getY());
+
+    if (this.mode === Mode.VisualBlock) {
+      const x1 = Math.min(startState.getX(), this.state.getX());
+      const x2 = Math.max(startState.getX(), this.state.getX());
+      return [
+        { x1, x2, y1, y2 }
+      ]
+    } 
+    if (this.mode === Mode.VisualLine) {
+      const output: { x1: number, x2: number, y1: number, y2: number }[] = [];
+      for (let y = y1; y <= y2; y++) {
+        output.push({
+          x1: 0,
+          x2: this.file.lineLength(y) - 1,
+          y1: y,
+          y2: y,
+        })
+      }
+      return output;
+    }
+    if (this.mode === Mode.Visual) {
+      const output: { x1: number, x2: number, y1: number, y2: number }[] = [];
+      for (let y = y1; y <= y2; y++) {
+        output.push({
+          x1: 0,
+          x2: this.file.lineLength(y) - 1,
+          y1: y,
+          y2: y,
+        })
+      }
+      output[0].x1 = startState.getX();
+      output[output.length - 1].x2 = this.state.getX();
+      return output;
+    }
+
+    return undefined;
   }
 }
