@@ -41,6 +41,10 @@ export class File {
     }
   }
 
+  deleteLine(y: number) {
+    this.lines[y] = null;
+  }
+
   cleanup() {
     this.lines = this.lines.filter(Boolean);
   }
@@ -71,6 +75,24 @@ export class File {
 
   getLines() {
     return this.lines.slice().filter(isNotNull);
+  }
+
+  mergeLines(a: number, b: number) {
+    this.lines[a] = (this.lines[a] ?? "") + (this.lines[b] ?? "");
+    this.lines[b] = null;
+  }
+
+  insertText(text: string, x: number, y: number) {
+    const line = this.lines[y];
+    if (!line) {
+      this.lines[y] = text;
+    } else {
+      this.lines[y] = line.slice(0, x) + text + line.slice(x);
+    }
+  }
+
+  insertLine(y: number, text = "") {
+    this.lines.splice(y, 0, text);
   }
 }
 

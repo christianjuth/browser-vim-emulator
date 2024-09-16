@@ -1,11 +1,6 @@
 import { File } from "./file"
-
-export enum SpecialKeys {
-  Ctrl = 'Ctrl-',
-  Shift = 'Shift-',
-  Alt = 'Alt',
-  Meta = 'Meta',
-}
+import { KeyEvent } from './KeyEvent'
+import { State } from './State'
 
 export enum Mode {
   Normal = 'normal',
@@ -22,186 +17,14 @@ type HighlightSelection = {
   y2: number,
 }
 
-function clamp(min: number, max: number, value: number) {
-  return Math.min(max, Math.max(min, value));
-}
-
-class State {
-  readonly file: File;
-  x: number = 0;
-  y: number = 0;
-  prevState?: State;
-  nextState?: State;
-  constructor(file: File) {
-    this.file = file;
-  }
-  clone() {
-    const state = new State(this.file.clone());
-    state.x = this.x;
-    state.y = this.y;
-    return state;
-  }
-
-  setX(x: number | ((x: number) => number)) {
-    const xAsNumber = typeof x === 'function' ? x(this.x) : x;
-    this.x = clamp(0, this.file.lineLength(this.y) - 1, xAsNumber);
-  }
-
-  getX() {
-    return clamp(0, this.file.lineLength(this.y) - 1, this.x);
-  }
-
-  setY(y: number | ((y: number) => number)) {
-    const yAsNumber = typeof y === 'function' ? y(this.y) : y;
-    this.y = clamp(0, this.file.lineCount() - 1, yAsNumber);
-  }
-
-  getY() {
-    return clamp(0, this.file.lineCount() - 1, this.y);
+function repeat(count: number, fn: (i: number) => void) {
+  for (let i = 0; i < count; i++) {
+    fn(i);
   }
 }
-
-const MOTIONS: {
-  matcher: RegExp,
-  handler: (state: State, match: RegExpMatchArray) => void
-}[] = [
-  {
-    matcher: /([0-9]*)(h|j|k|l|ArrowUp|ArrowDown|ArrowLeft|ArrowRight)$/,
-    handler: (state: State, match: RegExpMatchArray) => {
-      const count = parseInt(match[1] || '1');
-      const motion = match[2];
-      switch (motion) {
-        case 'h':
-        case 'ArrowLeft':
-          state.setX(x => x - count);
-          break;
-        case 'j':
-        case 'ArrowDown':
-          state.setY(y => y + count);
-          break;
-        case 'k':
-        case 'ArrowUp':
-          state.setY(y => y - count);
-          break;
-        case 'l':
-        case 'ArrowRight':
-          state.setX(x => x + count);
-          break;
-      }
-    }
-  },
-  {
-    matcher: /([0-9]*)(gg|G)$/,
-    handler: (state: State, match: RegExpMatchArray) => {
-      const line = match[1] ? parseInt(match[1]) : undefined;
-      if (line) {
-        state.setY(line - 1);
-      } else if (match[2] === 'gg') {
-        state.setY(0);
-      } else {
-        state.setY(state.file.lineCount() - 1);
-      }
-    }
-  },
-  {
-    matcher: /([0-9]*)(\$)$/,
-    handler: (state: State, match: RegExpMatchArray) => {
-      const count = match[1] ? parseInt(match[1]) : undefined;
-      if (count) {
-        state.setY(y => y + count - 1);
-      }
-      state.setX(state.file.lineLength(state.y) - 1);
-    }
-  },
-  {
-    matcher: /(?<![0-9])(0)$/,
-    handler: (state: State) => {
-      state.setX(0);
-    }
-  }
-]
-
-const ACTIONS: {
-  matcher: RegExp,
-  handler: (
-    state: State, 
-    match: RegExpMatchArray, 
-    mode: Mode,
-    highlights?: HighlightSelection[]
-  ) => State
-}[] = [
-  {
-    matcher: /([0-9]*)(x)$/,
-    handler: (state, match, mode, highlights) => {
-      const count = match[1] ? parseInt(match[1]) : 1;
-
-      if (highlights) {
-        for (const highlight of highlights) {
-          state.file.deleteSelection({
-            x: highlight.x1,
-            y: highlight.y1,
-          }, {
-            x: highlight.x2,
-            y: highlight.y2,  
-          }, mode === Mode.VisualLine)
-        }
-      } else {
-        state.file.deleteSelection({
-          x: state.getX(),
-          y: state.getY(),
-        }, {
-          x: state.getX() + count - 1,
-          y: state.getY(),
-        })
-      }
-
-      state.file.cleanup();
-
-      return state;
-    }
-  },
-]
-
-const HISTORY_ACTIONS: {
-  matcher: RegExp,
-  handler: (state: State, match: RegExpMatchArray) => State
-}[] = [
-  {
-    matcher: /([0-9]*)(u)$/,
-    handler: (state, match) => {
-      const count = match[1] ? parseInt(match[1]) : 1;
-      let newState = state;
-
-      for (let i = 0; i < count; i++) {
-        if (!newState.prevState) {
-          break;
-        }
-        newState = newState.prevState;
-      }
-
-      return newState;
-    }
-  },
-  {
-    matcher: /([0-9]*)(Ctrl-r)$/,
-    handler: (state, match) => {
-      const count = match[1] ? parseInt(match[1]) : 1;
-      let newState = state;
-
-      for (let i = 0; i < count; i++) {
-        if (!newState.nextState) {
-          break;
-        }
-        newState = newState.nextState;
-      }
-
-      return newState;
-    }
-  }
-]
 
 export class Vim {
-  keyBuffer = "";
+  keyBuffer?: KeyEvent;
 
   state: State
 
@@ -218,22 +41,26 @@ export class Vim {
     onStateChange?: () => void 
   }) {
     this.stateChangeListener = onStateChange;
-    this.state = new State(new File(file));
+    this.state = new State(new File(file), this);
   }
 
   currentLine() {
     return this.file.getLine(this.state.getY());
   }
 
+  currentLineLength() {
+    return this.file.lineLength(this.state.getY());
+  }
+
   get file() {
     return this.state.file;
   }
 
-  mutateState(mutator: (state: State) => State) {
+  mutateState(mutator: (state: State) => State | void) {
     const newState = this.state.clone();
     newState.prevState = this.state;
     this.state.nextState = newState;
-    this.state = mutator(newState);
+    this.state = mutator(newState) || newState;
   }
 
   getLines() {
@@ -251,74 +78,297 @@ export class Vim {
     }
   }
 
-  keyPress(key: string) {
-    this.keyBuffer += key;
-    if (this.keyBuffer.length >= 1) {
-      this.processKeyBuffer();
+  keyPress(key: KeyEvent | string) {
+    if (typeof key === 'string') {
+      key = new KeyEvent({
+        key,
+        ctrlKey: false,
+        shiftKey: false,
+      });
     }
+
+    const lastKey = this.keyBuffer;
+
+    if (lastKey && lastKey.canBeCombined(key)) {
+      lastKey.combine(key);
+    } else {
+      key.prevKey = lastKey;
+      this.keyBuffer = key;
+    }
+
+    this.reducer();
     this.notifyStateChange();
   }
 
-  private processKeyBuffer() {
-    let foundMatch = false;
+  reducer() {
+    const lastKey = this.keyBuffer;
+    
+    if (!lastKey) {
+      return;
+    }
 
-    if (/Escape/.test(this.keyBuffer)) {
+    if (lastKey.key === 'Escape') {
       this.visualSelectionStartState = undefined;
-      this.keyBuffer = "";
+      delete this.keyBuffer;
       this.mode = Mode.Normal;
+      //  reclamp cursor position on mode change
+      this.state.setX(x => x);
       return;
-    } else if (this.mode === Mode.Normal && /i$/.test(this.keyBuffer)) {
+    }
+
+    switch (this.mode) {
+      case Mode.Normal:
+        this.normalReducer(lastKey);
+        break;
+      case Mode.Insert:
+        this.insertReducer(lastKey);
+        break;
+      case Mode.Visual:
+      case Mode.VisualLine:
+      case Mode.VisualBlock:
+        this.visualReducer(lastKey);
+        break;
+    }
+  }
+
+  motionReducer(lastKey: KeyEvent) {
+    const prevNumber = lastKey.prevKey?.number;
+    switch (lastKey.key) {
+      case 'h':
+      case 'ArrowLeft':
+        repeat(prevNumber || 1, () => {
+          this.state.moveCursorBackward();
+        });
+        return;
+      case 'j':
+      case 'ArrowDown':
+        repeat(prevNumber || 1, () => {
+          this.state.setY(y => y + 1);
+        });
+        return;
+      case 'k':
+      case 'ArrowUp':
+        repeat(prevNumber || 1, () => {
+          this.state.setY(y => y - 1);
+        });
+        return;
+      case 'l':
+      case 'ArrowRight':
+        repeat(prevNumber || 1, () => {
+          this.state.moveCursorForward();
+        });
+        return;
+      case 'G':
+        if (prevNumber) {
+          this.state.setY(prevNumber - 1);
+        } else {
+          this.state.setY(this.file.lineCount() - 1);
+        }
+        return;
+      case 'g':
+        if (lastKey.prevKey?.key === 'g') {
+          if (lastKey.prevKey.prevKey?.number) {
+            this.state.setY(lastKey.prevKey.prevKey.number - 1);
+          } else {
+            this.state.setY(0);
+          }
+        } 
+        return;
+      case 'W':
+        this.state.moveCursorForward();
+        repeat(prevNumber || 1, () => {
+          const startLine = this.state.getY();
+          while (this.state.getCharacterUnderCursor() !== ' ' && this.state.getY() === startLine && !this.state.isEndOfFile()) {
+            this.state.moveCursorForward();
+          }
+          if (this.state.getY() === startLine) {
+            this.state.moveCursorForward();
+          }
+        });
+        return;
+      case 'E':
+        repeat(prevNumber || 1, () => {
+        this.state.moveCursorForward();
+          const startLine = this.state.getY();
+          let nextState = this.state.clone().moveCursorForward();
+          while (nextState && nextState.getCharacterUnderCursor() !== ' ' && nextState.getY() === startLine) {
+            this.state.moveCursorForward();
+            if (nextState.isEndOfFile()) {
+              break;
+            }
+            nextState.moveCursorForward();
+          }
+        });
+        return;
+      case 'B':
+        repeat(prevNumber || 1, () => {
+          const nextState = this.state.clone().moveCursorBackward();
+          nextState.moveCursorBackward();
+          const startLine = nextState.getY();
+          while (nextState.getCharacterUnderCursor() !== ' ' && nextState.getY() === startLine && !this.state.isStartOfFile()) {
+            this.state.moveCursorBackward();
+            nextState.moveCursorBackward();
+          }
+          this.state.moveCursorBackward();
+        });
+        return;
+      case '0':
+        this.state.setX(0);
+        return;
+      case '$':
+        if (prevNumber) {
+          this.state.setY(y => y + prevNumber - 1);
+        }
+        this.state.setX(this.file.lineLength(this.state.getY()) - 1);
+        return;
+    }
+  }
+
+  normalReducer(lastKey: KeyEvent) {
+    const count = lastKey.prevKey?.number || 1;
+
+    if (lastKey.key === 'i' || lastKey.key === 'I') {
+      if (lastKey.shiftKey) {
+        this.state.setX(0);
+      }
       this.mode = Mode.Insert;
-      this.keyBuffer = "";
+      delete this.keyBuffer;
       return;
-    } else if (this.mode === Mode.Normal && /Ctrl-v$/.test(this.keyBuffer)) {
+    }
+
+    if (lastKey.key === 'a' || lastKey.key === 'A') {
+      this.mode = Mode.Insert;
+      if (lastKey.shiftKey) {
+        this.state.setX(this.currentLineLength());
+      } else {
+        this.state.moveCursorForward();
+      }
+      delete this.keyBuffer;
+      return;
+    }
+
+    if (lastKey.key === 'v' && lastKey.ctrlKey) {
       this.visualSelectionStartState = this.state.clone();
       this.mode = Mode.VisualBlock;
-      this.keyBuffer = "";
+      delete this.keyBuffer;
       return;
-    } else if (this.mode === Mode.Normal && /Shift-V$/.test(this.keyBuffer)) {
+    }
+
+    if (lastKey.key === 'V') {
       this.visualSelectionStartState = this.state.clone();
       this.mode = Mode.VisualLine;
-      this.keyBuffer = "";
+      delete this.keyBuffer;
       return;
-    } else if (this.mode === Mode.Normal && /v$/.test(this.keyBuffer)) {
+    }
+
+    if (lastKey.key === 'v') {
       this.visualSelectionStartState = this.state.clone();
       this.mode = Mode.Visual;
-      this.keyBuffer = "";
+      delete this.keyBuffer;
       return;
     }
 
-    for (const motion of MOTIONS) {
-      if (motion.matcher.test(this.keyBuffer)) {
-        foundMatch = true;
-        const match = this.keyBuffer.match(motion.matcher)!;
-        const matchLength = match[0].length;
-        motion.handler(this.state, match)
-        this.keyBuffer = this.keyBuffer.slice(0, this.keyBuffer.length - matchLength);
-      }
+    if (lastKey.key === 'x') {
+      this.mutateState(s => {
+        repeat(count, () => {
+          s.deleteTextAtCursor()
+        });
+        return s;
+      })
+      delete this.keyBuffer;
+      return;
     }
 
-    for (const action of ACTIONS) {
-      if (action.matcher.test(this.keyBuffer)) {
-        foundMatch = true;
-        const match = this.keyBuffer.match(action.matcher)!;
-        this.mutateState((state) => action.handler(state, match, this.mode, this.getHighlighted()));
-        this.visualSelectionStartState = undefined;
-      }
+    if (lastKey.key === 'd' && lastKey.prevKey?.key === 'd') {
+      const count = lastKey.prevKey.prevKey?.number || 1;
+      this.mutateState(s => {
+        repeat(count, (i) => {
+          s.file.deleteLine(s.getY()+i);
+        });
+        s.file.cleanup();
+        return s;
+      });
+      delete this.keyBuffer;
+      return;
     }
 
-    if (!foundMatch) {
-      for (const action of HISTORY_ACTIONS) {
-        if (action.matcher.test(this.keyBuffer)) {
-          foundMatch = true;
-          const match = this.keyBuffer.match(action.matcher)!;
-          this.state = action.handler(this.state, match);
+    if (lastKey.key === 'u') {
+      repeat(count, () => {
+        this.state = this.state.prevState || this.state;
+      });
+      delete this.keyBuffer;
+      return;
+    }
+
+    if (lastKey.key === 'r' && lastKey.ctrlKey) {
+      repeat(count, () => {
+        this.state = this.state.nextState || this.state;
+      });
+      delete this.keyBuffer;
+      return;
+    }
+
+    this.motionReducer(lastKey);
+  }
+
+  insertReducer(lastKey: KeyEvent) {
+    switch (lastKey.key) {
+      case 'Tab':
+        this.state.insertTextAtCursor('\t');
+        delete this.keyBuffer;
+        break;
+      case 'ArrowLeft':
+        this.state.moveCursorBackward();
+        delete this.keyBuffer;
+        break;
+      case 'ArrowRight':
+        this.state.moveCursorForward();
+        delete this.keyBuffer;
+        break;
+      case 'Backspace':
+        this.state.deleteTextAtCursor();
+        delete this.keyBuffer;
+        break;
+      case 'Enter':
+        this.state.file.insertLine(this.state.getY() + 1);
+        this.state.setY(y => y + 1);
+        delete this.keyBuffer;
+        break;
+      default:
+        this.state.insertTextAtCursor(lastKey.key);
+        delete this.keyBuffer;
+        break;
+    }
+    delete this.keyBuffer;
+  }
+
+  visualReducer(lastKey: KeyEvent) {
+    const highlights = this.getHighlighted();
+
+    if (!highlights) {
+      return
+    }
+
+    this.motionReducer(lastKey);
+
+    switch (lastKey.key) {
+      case 'x':
+      case 'd':
+        for (const highlight of highlights) {
+          this.file.deleteSelection({
+            x: highlight.x1,
+            y: highlight.y1,
+          }, {
+            x: highlight.x2,
+            y: highlight.y2,  
+          }, this.mode === Mode.VisualLine)
         }
-      }
-    }
-
-    if (foundMatch) {
-      this.keyBuffer = "";
+        if (this.mode === Mode.Visual && highlights.length > 1) {
+          const yMin = Math.min(...highlights.map(h => h.y1));
+          this.file.mergeLines(yMin, yMin + 1)
+        }
+        this.file.cleanup();
+        break;
     }
   }
 
@@ -333,14 +383,13 @@ export class Vim {
     const keyListener = (e: KeyboardEvent) => {
       // ignore shift, alt, and meta keys
       if (!ignoreKeys.includes(e.key)) {
+        e.preventDefault();
         let key = e.key;
-        if (e.ctrlKey) {
-          key = SpecialKeys.Ctrl + key;
-        }
-        if (e.shiftKey) {
-          key = SpecialKeys.Shift + key;
-        }
-        this.keyPress(key);
+        this.keyPress(new KeyEvent({
+          key,
+          ctrlKey: e.ctrlKey,
+          shiftKey: e.shiftKey,
+        }));
       }
     }
     window.addEventListener('keydown', keyListener);
@@ -348,7 +397,6 @@ export class Vim {
       window.removeEventListener('keydown', keyListener);
     }
   }
-
 
   notifyStateChange() {
     this.stateChangeListener?.();

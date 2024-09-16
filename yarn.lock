@@ -476,6 +476,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@polka/url@npm:^1.0.0-next.24":
+  version: 1.0.0-next.25
+  resolution: "@polka/url@npm:1.0.0-next.25"
+  checksum: 10c0/ef61f0a0fe94bb6e1143fc5b9d5a12e6ca9dbd2c57843ebf81db432c21b9f1005c09e8a1ef8b6d5ddfa42146ca65b640feb2d353bd0d3546da46ba59e48a5349
+  languageName: node
+  linkType: hard
+
 "@radix-ui/primitive@npm:1.1.0":
   version: 1.1.0
   resolution: "@radix-ui/primitive@npm:1.1.0"
@@ -1322,6 +1329,23 @@ __metadata:
   dependencies:
     tinyspy: "npm:^3.0.0"
   checksum: 10c0/b251be1390c105b68aa95270159c4583c3e1a0f7a2e1f82db8b7fadedc3cb459c5ef9286033a1ae764810e00715552fc80afe4507cd8b0065934fb1a64926e06
+  languageName: node
+  linkType: hard
+
+"@vitest/ui@npm:^2.1.1":
+  version: 2.1.1
+  resolution: "@vitest/ui@npm:2.1.1"
+  dependencies:
+    "@vitest/utils": "npm:2.1.1"
+    fflate: "npm:^0.8.2"
+    flatted: "npm:^3.3.1"
+    pathe: "npm:^1.1.2"
+    sirv: "npm:^2.0.4"
+    tinyglobby: "npm:^0.2.6"
+    tinyrainbow: "npm:^1.2.0"
+  peerDependencies:
+    vitest: 2.1.1
+  checksum: 10c0/52b1580edb9a7c87bdbfdc6521a8b01af1294a2a674f97597a8a923a663f198571972a7b65c66aebe5afb5f886bf1cd4e0828913558c95bc118f568d68afa046
   languageName: node
   linkType: hard
 
@@ -2862,6 +2886,25 @@ __metadata:
   languageName: node
   linkType: hard
 
+"fdir@npm:^6.3.0":
+  version: 6.3.0
+  resolution: "fdir@npm:6.3.0"
+  peerDependencies:
+    picomatch: ^3 || ^4
+  peerDependenciesMeta:
+    picomatch:
+      optional: true
+  checksum: 10c0/be91cd6ab2edbc6df457a69b79672ee9345996986821918ef01908ce9619b8cbecd9c6c13d4ca5d0aeb548b162050d68c599f45bb3fbff194a91e16f25e646b5
+  languageName: node
+  linkType: hard
+
+"fflate@npm:^0.8.2":
+  version: 0.8.2
+  resolution: "fflate@npm:0.8.2"
+  checksum: 10c0/03448d630c0a583abea594835a9fdb2aaf7d67787055a761515bf4ed862913cfd693b4c4ffd5c3f3b355a70cf1e19033e9ae5aedcca103188aaff91b8bd6e293
+  languageName: node
+  linkType: hard
+
 "file-entry-cache@npm:^6.0.1":
   version: 6.0.1
   resolution: "file-entry-cache@npm:6.0.1"
@@ -2901,7 +2944,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"flatted@npm:^3.2.9":
+"flatted@npm:^3.2.9, flatted@npm:^3.3.1":
   version: 3.3.1
   resolution: "flatted@npm:3.3.1"
   checksum: 10c0/324166b125ee07d4ca9bcf3a5f98d915d5db4f39d711fba640a3178b959919aae1f7cfd8aabcfef5826ed8aa8a2aa14cc85b2d7d18ff638ddf4ae3df39573eaf
@@ -4128,6 +4171,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"mrmime@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "mrmime@npm:2.0.0"
+  checksum: 10c0/312b35ed288986aec90955410b21ed7427fd1e4ee318cb5fc18765c8d029eeded9444faa46589e5b1ed6b35fb2054a802ac8dcb917ddf6b3e189cb3bf11a965c
+  languageName: node
+  linkType: hard
+
 "ms@npm:2.0.0":
   version: 2.0.0
   resolution: "ms@npm:2.0.0"
@@ -4555,6 +4605,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"picomatch@npm:^4.0.2":
+  version: 4.0.2
+  resolution: "picomatch@npm:4.0.2"
+  checksum: 10c0/7c51f3ad2bb42c776f49ebf964c644958158be30d0a510efd5a395e8d49cb5acfed5b82c0c5b365523ce18e6ab85013c9ebe574f60305892ec3fa8eee8304ccc
+  languageName: node
+  linkType: hard
+
 "pify@npm:^2.3.0":
   version: 2.3.0
   resolution: "pify@npm:2.3.0"
@@ -4825,6 +4882,7 @@ __metadata:
     "@types/node": "npm:^20"
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
+    "@vitest/ui": "npm:^2.1.1"
     class-variance-authority: "npm:^0.7.0"
     clsx: "npm:^2.1.1"
     eslint: "npm:^8"
@@ -5270,6 +5328,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"sirv@npm:^2.0.4":
+  version: 2.0.4
+  resolution: "sirv@npm:2.0.4"
+  dependencies:
+    "@polka/url": "npm:^1.0.0-next.24"
+    mrmime: "npm:^2.0.0"
+    totalist: "npm:^3.0.0"
+  checksum: 10c0/68f8ee857f6a9415e9c07a1f31c7c561df8d5f1b1ba79bee3de583fa37da8718def5309f6b1c6e2c3ef77de45d74f5e49efc7959214443aa92d42e9c99180a4e
+  languageName: node
+  linkType: hard
+
 "slash@npm:^3.0.0":
   version: 3.0.0
   resolution: "slash@npm:3.0.0"
@@ -5659,6 +5728,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"tinyglobby@npm:^0.2.6":
+  version: 0.2.6
+  resolution: "tinyglobby@npm:0.2.6"
+  dependencies:
+    fdir: "npm:^6.3.0"
+    picomatch: "npm:^4.0.2"
+  checksum: 10c0/d7b5eb4c5b9c341f961c1d3c30624f9a1e22b27b48a79a65b48120245a77c143827f75f5854628fef1a4bd4bc3cfaf06ce76497f3a574e3f933229c5e556e5fe
+  languageName: node
+  linkType: hard
+
 "tinypool@npm:^1.0.0":
   version: 1.0.1
   resolution: "tinypool@npm:1.0.1"
@@ -5686,6 +5765,13 @@ __metadata:
   dependencies:
     is-number: "npm:^7.0.0"
   checksum: 10c0/487988b0a19c654ff3e1961b87f471702e708fa8a8dd02a298ef16da7206692e8552a0250e8b3e8759270f62e9d8314616f6da274734d3b558b1fc7b7724e892
+  languageName: node
+  linkType: hard
+
+"totalist@npm:^3.0.0":
+  version: 3.0.1
+  resolution: "totalist@npm:3.0.1"
+  checksum: 10c0/4bb1fadb69c3edbef91c73ebef9d25b33bbf69afe1e37ce544d5f7d13854cda15e47132f3e0dc4cafe300ddb8578c77c50a65004d8b6e97e77934a69aa924863
   languageName: node
   linkType: hard
 

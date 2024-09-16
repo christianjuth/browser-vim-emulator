@@ -2,6 +2,7 @@
 
 import { Mode } from '@/lib/vim/vim';
 import { useVim } from "@/lib/vim/hooks";
+import { cn } from "@/lib/utils";
 
 const INIT_FILE = 
 `# Welcome to Vim!
@@ -16,13 +17,18 @@ const INIT_FILE =
 # You can also paste by pressing p.
 # You can also cut by pressing d.`
 
-function Cursor(props: { x: number, y: number }) {
+function Cursor(props: { x: number, y: number, mode: Mode }) {
+  const isInsert = props.mode === Mode.Insert;
+  const left = props.x;
   return (
     <div 
-      className="h-[1em] w-[1ch] bg-foreground/90 absolute" 
+      className={cn(
+        "h-[1em] w-[1ch] bg-foreground/90 absolute", 
+        isInsert && "w-px"
+      )}
       style={{
         top: `${props.y}em`,
-        left: `${props.x}ch`,
+        left: Math.max(0, left) + "ch",
       }}
     />
   );
@@ -57,7 +63,7 @@ export default function Home() {
     <div className="h-[100svh] py-10">
       <div className="h-full flex flex-col justify-between max-w-4xl mx-auto border bg-card">
         <div className="grid grid-cols-[min-content,1fr] leading-[1em] gap-x-2 font-mono p-3 overflow-hidden">
-          <div>
+          <div className="min-w-8">
             {lines.map((_, i) => (
               <div className="text-right text-muted-foreground" key={i}>{i + 1}</div>
             ))}
@@ -68,7 +74,7 @@ export default function Home() {
               {vim.toString()}
             </pre>
 
-            <Cursor x={pos.x} y={pos.y} />
+            <Cursor x={pos.x} y={pos.y} mode={vim.getMode()} />
 
             {highlights?.map((highlight, i) => (
               <Highlight {...highlight} key={i} />
