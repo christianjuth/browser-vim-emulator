@@ -34,7 +34,7 @@ export default function Home() {
         keyListener="global"
       >
         <div className="flex flex-row">
-          <VimLineNumbers className="min-x-14 mr-2 text-muted-foreground" />
+          <VimLineNumbers className="min-w-9 mr-2 text-muted-foreground" />
           <VimEditor>
             <VimCursor className="bg-foreground/80" /> 
             <VimHighlights className="bg-foreground/50" />

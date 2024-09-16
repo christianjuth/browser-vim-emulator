@@ -119,6 +119,51 @@ describe('vim', () => {
 
         expect(vim.getCursorPos()).toEqual({ x: vim.currentLineLength() - 1, y: 1 });
       });
+
+      test("f", () => {
+        const vim = new Vim({ 
+          file: [
+            'The quick brown fox',
+            'test #'
+          ].join('\n') 
+        });
+
+        expect(vim.getCursorPos()).toEqual({ x: 0, y: 0 });
+
+        vim.keyPress('f');
+        vim.keyPress('o');
+
+        expect(vim.getCursorPos()).toEqual({ x: 12, y: 0 });
+
+        // You shouldn't be able to advance past the current line
+        vim.keyPress('f');
+        vim.keyPress('#');
+
+        expect(vim.getCursorPos()).toEqual({ x: 12, y: 0 });
+      });
+
+      test('t', () => {
+        const vim = new Vim({ 
+          file: [
+            'The quick brown fox',
+            'test #'
+          ].join('\n') 
+        });
+
+        expect(vim.getCursorPos()).toEqual({ x: 0, y: 0 });
+
+        vim.keyPress('t');
+        vim.keyPress('o');
+
+        expect(vim.getCursorPos()).toEqual({ x: 11, y: 0 });
+
+        // You shouldn't be able to advance past the current line
+        vim.keyPress('t');
+        vim.keyPress('#');
+
+        expect(vim.getCursorPos()).toEqual({ x: 11, y: 0 });
+      });
+
     });
 
     describe('deletion', () => {

@@ -77,6 +77,10 @@ export class State {
     return this.y === 0 && this.x === 0;
   }
 
+  isEndOfLine() {
+    return this.getX() === this.file.lineLength(this.y) - 1;
+  }
+
   insertTextAtCursor(text: string) {
     this.file.insertText(text, this.x, this.y);
     this.setX(x => x + text.length);

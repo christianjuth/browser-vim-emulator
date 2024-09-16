@@ -147,7 +147,7 @@ export function Vim({
     return () => {
       target.removeEventListener('keydown', listener);
     }
-  }, [vim]);
+  }, [vim, keyListener]);
 
   return (
     <Context.Provider value={{ vim }}>

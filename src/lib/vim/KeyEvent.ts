@@ -1,4 +1,4 @@
-import type { Vim } from './Vim';
+import { Mode, type Vim } from './Vim';
 
 export class KeyEvent {
   prevKey?: KeyEvent;
@@ -50,7 +50,9 @@ export function createKeybardEventListener(vim: Vim) {
   return (e: KeyboardEvent) => {
     // ignore shift, alt, and meta keys
     if (!IGNORE_KEYS.includes(e.key)) {
-      // e.preventDefault();
+      if (vim.getMode() === Mode.Insert) {
+        e.preventDefault();
+      }
       vim.keyPress(new KeyEvent({
         key: e.key,
         ctrlKey: e.ctrlKey,

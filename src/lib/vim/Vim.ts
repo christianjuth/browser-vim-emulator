@@ -24,7 +24,6 @@ export class Vim {
   state: State
 
   stateChangeListener?: () => void;
-
   visualSelectionStartState?: State;
   private mode = Mode.Normal;
 
@@ -170,6 +169,7 @@ export class Vim {
         } 
         return;
       case 'W':
+      case 'w':
         this.state.moveCursorForward();
         repeat(prevNumber || 1, () => {
           const startLine = this.state.getY();
@@ -182,6 +182,7 @@ export class Vim {
         });
         return;
       case 'E':
+      case 'e':
         repeat(prevNumber || 1, () => {
         this.state.moveCursorForward();
           const startLine = this.state.getY();
@@ -196,6 +197,7 @@ export class Vim {
         });
         return;
       case 'B':
+      case 'b':
         repeat(prevNumber || 1, () => {
           const nextState = this.state.clone().moveCursorBackward();
           nextState.moveCursorBackward();
@@ -210,6 +212,12 @@ export class Vim {
       case '0':
         this.state.setX(0);
         return;
+      case '^':
+        this.state.setX(0);
+        while (this.state.getCharacterUnderCursor() === ' ' && !this.state.isEndOfLine()) {
+          this.state.moveCursorForward();
+        }
+        return;
       case '$':
         if (prevNumber) {
           this.state.setY(y => y + prevNumber - 1);
@@ -217,15 +225,44 @@ export class Vim {
         this.state.setX(this.file.lineLength(this.state.getY()) - 1);
         return;
     }
+
+    switch (lastKey.prevKey?.key) {
+      case 'f':
+        const char = lastKey.key;
+        const nextState = this.state.clone();
+        while (nextState.getCharacterUnderCursor() !== char && !nextState.isEndOfFile() && !nextState.isEndOfLine()) {
+          nextState.moveCursorForward();
+        }
+        if (nextState.getCharacterUnderCursor() === char) {
+          this.state.setX(nextState.getX());
+        }
+        return;
+    }
+
+    switch (lastKey.prevKey?.key) {
+      case 't':
+        const char = lastKey.key;
+        const nextState = this.state.clone();
+        while (nextState.getCharacterUnderCursor() !== char && !nextState.isEndOfFile() && !nextState.isEndOfLine()) {
+          nextState.moveCursorForward();
+        }
+        if (nextState.getCharacterUnderCursor() === char) {
+          this.state.setX(x => Math.max(x, nextState.getX() - 1));
+        }
+        return;
+    }
+
   }
 
   normalReducer(lastKey: KeyEvent) {
     const count = lastKey.prevKey?.number || 1;
 
     if (lastKey.key === 'i' || lastKey.key === 'I') {
-      if (lastKey.shiftKey) {
-        this.state.setX(0);
-      }
+      this.mutateState(s => {
+        if (lastKey.shiftKey) {
+          s.setX(0);
+        }
+      })
       this.mode = Mode.Insert;
       delete this.keyBuffer;
       return;
@@ -233,11 +270,13 @@ export class Vim {
 
     if (lastKey.key === 'a' || lastKey.key === 'A') {
       this.mode = Mode.Insert;
-      if (lastKey.shiftKey) {
-        this.state.setX(this.currentLineLength());
-      } else {
-        this.state.moveCursorForward();
-      }
+      this.mutateState(s => {
+        if (lastKey.shiftKey) {
+          s.setX(this.currentLineLength());
+        } else {
+          s.moveCursorForward();
+        }
+      })
       delete this.keyBuffer;
       return;
     }
@@ -309,7 +348,7 @@ export class Vim {
   insertReducer(lastKey: KeyEvent) {
     switch (lastKey.key) {
       case 'Tab':
-        this.state.insertTextAtCursor('\t');
+        this.state.insertTextAtCursor('  ');
         delete this.keyBuffer;
         break;
       case 'ArrowLeft':
@@ -349,20 +388,22 @@ export class Vim {
     switch (lastKey.key) {
       case 'x':
       case 'd':
-        for (const highlight of highlights) {
-          this.file.deleteSelection({
-            x: highlight.x1,
-            y: highlight.y1,
-          }, {
-            x: highlight.x2,
-            y: highlight.y2,  
-          }, this.mode === Mode.VisualLine)
-        }
-        if (this.mode === Mode.Visual && highlights.length > 1) {
-          const yMin = Math.min(...highlights.map(h => h.y1));
-          this.file.mergeLines(yMin, yMin + 1)
-        }
-        this.file.cleanup();
+        this.mutateState(s => {
+          for (const highlight of highlights) {
+            s.file.deleteSelection({
+              x: highlight.x1,
+              y: highlight.y1,
+            }, {
+              x: highlight.x2,
+              y: highlight.y2,  
+            }, this.mode === Mode.VisualLine)
+          }
+          if (this.mode === Mode.Visual && highlights.length > 1) {
+            const yMin = Math.min(...highlights.map(h => h.y1));
+            s.file.mergeLines(yMin, yMin + 1)
+          }
+          s.file.cleanup();
+        });
         break;
     }
   }
