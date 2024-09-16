@@ -1,3 +1,5 @@
+import type { Vim } from './Vim';
+
 export class KeyEvent {
   prevKey?: KeyEvent;
 
@@ -33,6 +35,27 @@ export class KeyEvent {
       this.number = parseInt(this.key);
     } else {
       throw new Error('Cannot combine key events');
+    }
+  }
+}
+
+const IGNORE_KEYS = [
+  "Shift",
+  "Alt",
+  "Meta",
+  "Control",
+];
+
+export function createKeybardEventListener(vim: Vim) {
+  return (e: KeyboardEvent) => {
+    // ignore shift, alt, and meta keys
+    if (!IGNORE_KEYS.includes(e.key)) {
+      // e.preventDefault();
+      vim.keyPress(new KeyEvent({
+        key: e.key,
+        ctrlKey: e.ctrlKey,
+        shiftKey: e.shiftKey,
+      }));
     }
   }
 }

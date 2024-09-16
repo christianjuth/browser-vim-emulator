@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { Vim } from './vim'
+import { Vim } from './Vim'
 import { KeyEvent } from './KeyEvent';
 
 const TEST_FILE = 

@@ -1,5 +1,5 @@
-import { Vim } from "./vim";
-import { useEffect, useRef, useState } from "react";
+import { Vim } from "../vim/Vim";
+import {  useRef, useState } from "react";
 
 export function useVim(initFile: string) {
   const [, setSignal] = useState(0);
@@ -8,11 +8,6 @@ export function useVim(initFile: string) {
     file: initFile,
     onStateChange: () => setSignal(s => s + 1)
   }));
-
-  useEffect(() => {
-    const cleanup = vim.current.registerKeyListeners();
-    return cleanup;
-  }, []);
 
   return vim.current;
 }

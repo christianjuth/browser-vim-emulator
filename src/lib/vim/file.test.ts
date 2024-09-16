@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { File } from './file'
+import { File } from './File'
 
 const TEST_FILE = 
 `The quick brown fox

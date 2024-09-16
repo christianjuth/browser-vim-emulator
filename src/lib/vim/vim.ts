@@ -1,6 +1,7 @@
-import { File } from "./file"
+import { File } from "./File"
 import { KeyEvent } from './KeyEvent'
 import { State } from './State'
+import { repeat } from './utils'
 
 export enum Mode {
   Normal = 'normal',
@@ -15,12 +16,6 @@ type HighlightSelection = {
   x2: number,
   y1: number,
   y2: number,
-}
-
-function repeat(count: number, fn: (i: number) => void) {
-  for (let i = 0; i < count; i++) {
-    fn(i);
-  }
 }
 
 export class Vim {
@@ -190,7 +185,7 @@ export class Vim {
         repeat(prevNumber || 1, () => {
         this.state.moveCursorForward();
           const startLine = this.state.getY();
-          let nextState = this.state.clone().moveCursorForward();
+          const nextState = this.state.clone().moveCursorForward();
           while (nextState && nextState.getCharacterUnderCursor() !== ' ' && nextState.getY() === startLine) {
             this.state.moveCursorForward();
             if (nextState.isEndOfFile()) {
@@ -369,32 +364,6 @@ export class Vim {
         }
         this.file.cleanup();
         break;
-    }
-  }
-
-  registerKeyListeners() {
-    const ignoreKeys = [
-      "Shift",
-      "Alt",
-      "Meta",
-      "Control",
-    ]
-
-    const keyListener = (e: KeyboardEvent) => {
-      // ignore shift, alt, and meta keys
-      if (!ignoreKeys.includes(e.key)) {
-        e.preventDefault();
-        let key = e.key;
-        this.keyPress(new KeyEvent({
-          key,
-          ctrlKey: e.ctrlKey,
-          shiftKey: e.shiftKey,
-        }));
-      }
-    }
-    window.addEventListener('keydown', keyListener);
-    return () => {
-      window.removeEventListener('keydown', keyListener);
     }
   }
 

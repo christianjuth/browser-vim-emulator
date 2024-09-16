@@ -1,5 +1,5 @@
-import { File } from './file';
-import { Vim, Mode } from './vim';
+import { File } from './File';
+import { Vim, Mode } from './Vim';
 
 function clamp(min: number, max: number, value: number) {
   return Math.min(max, Math.max(min, value));

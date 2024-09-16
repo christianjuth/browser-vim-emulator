@@ -1,8 +1,14 @@
 "use client";
 
-import { Mode } from '@/lib/vim/vim';
-import { useVim } from "@/lib/vim/hooks";
-import { cn } from "@/lib/utils";
+import { useVim } from "@/lib/vim-react/hooks";
+import { 
+  Vim, 
+  VimLineNumbers, 
+  VimEditor, 
+  VimCursor,
+  VimHighlights,
+  VimStatusBar,
+} from '@/lib/vim-react';
 
 const INIT_FILE = 
 `# Welcome to Vim!
@@ -17,82 +23,26 @@ const INIT_FILE =
 # You can also paste by pressing p.
 # You can also cut by pressing d.`
 
-function Cursor(props: { x: number, y: number, mode: Mode }) {
-  const isInsert = props.mode === Mode.Insert;
-  const left = props.x;
-  return (
-    <div 
-      className={cn(
-        "h-[1em] w-[1ch] bg-foreground/90 absolute", 
-        isInsert && "w-px"
-      )}
-      style={{
-        top: `${props.y}em`,
-        left: Math.max(0, left) + "ch",
-      }}
-    />
-  );
-}
-
-function Highlight(props: { x1: number, y1: number, x2: number, y2: number }) {
-  return (
-    <div 
-      className="bg-foreground/50 absolute" 
-      style={{
-        top: `${props.y1}em`,
-        left: `${props.x1}ch`,
-        width: `${(props.x2 - props.x1 + 1)}ch`,
-        height: `${(props.y2 - props.y1 + 1)}em`,
-      }}
-    />
-  );
-}
 
 export default function Home() {
   const vim = useVim(INIT_FILE);
-
-  const lines = vim.getLines();
-
-  const pos = vim.getCursorPos();
-  
-  const mode = vim.getMode();
-
-  const highlights = vim.getHighlighted();
-
   return (
     <div className="h-[100svh] py-10">
-      <div className="h-full flex flex-col justify-between max-w-4xl mx-auto border bg-card">
-        <div className="grid grid-cols-[min-content,1fr] leading-[1em] gap-x-2 font-mono p-3 overflow-hidden">
-          <div className="min-w-8">
-            {lines.map((_, i) => (
-              <div className="text-right text-muted-foreground" key={i}>{i + 1}</div>
-            ))}
-          </div>
-
-          <div className="relative">
-            <pre>
-              {vim.toString()}
-            </pre>
-
-            <Cursor x={pos.x} y={pos.y} mode={vim.getMode()} />
-
-            {highlights?.map((highlight, i) => (
-              <Highlight {...highlight} key={i} />
-            ))}
-          </div>
-
+      <Vim 
+        vim={vim}
+        className="h-full flex flex-col justify-between max-w-4xl mx-auto bg-card border font-mono p-4"
+        keyListener="global"
+      >
+        <div className="flex flex-row">
+          <VimLineNumbers className="min-x-14 mr-2 text-muted-foreground" />
+          <VimEditor>
+            <VimCursor className="bg-foreground/80" /> 
+            <VimHighlights className="bg-foreground/50" />
+          </VimEditor>
         </div>
 
-        <div className="p-3 flex flex-row justify-between text-xs items-center font-mono">
-          <div>
-            {mode === Mode.Normal ? "" : `-- ${mode.toUpperCase()} --`} 
-          </div>
-
-          <div className="bg-foreground/75 text-background px-2 leading-tight min-w-14 flex flex-row">
-            <span className="flex-1 text-right">{pos.y+1}</span>:<span className="flex-1">{pos.x+1}</span>
-          </div>
-        </div>
-      </div>
+        <VimStatusBar className="text-xs" />
+      </Vim>
     </div>
   );
 }
