@@ -26,23 +26,25 @@ export class State {
   setX(x: number | ((x: number) => number)) {
     const xAsNumber = typeof x === 'function' ? x(this.x) : x;
     const isInsertMode = this.vim.getMode() === Mode.Insert;
-    const maxLineLength = this.file.lineLength(this.y) - (isInsertMode ? 0 : 1);
+    const maxLineLength = Math.max(0, this.file.lineLength(this.y) - (isInsertMode ? 0 : 1));
     this.x = clamp(0, maxLineLength, xAsNumber);
   }
 
   getX() {
     const isInsertMode = this.vim.getMode() === Mode.Insert;
-    const maxLineLength = this.file.lineLength(this.y) - (isInsertMode ? 0 : 1);
+    const maxLineLength = Math.max(0, this.file.lineLength(this.y) - (isInsertMode ? 0 : 1));
     return clamp(0, maxLineLength, this.x);
   }
 
   setY(y: number | ((y: number) => number)) {
     const yAsNumber = typeof y === 'function' ? y(this.y) : y;
-    this.y = clamp(0, this.file.lineCount() - 1, yAsNumber);
+    const maxHeight = Math.max(0, this.file.lineCount() - 1);
+    this.y = clamp(0, maxHeight, yAsNumber);
   }
 
   getY() {
-    return clamp(0, this.file.lineCount() - 1, this.y);
+    const maxHeight = Math.max(0, this.file.lineCount() - 1);
+    return clamp(0, maxHeight, this.y);
   }
 
   getCharacterUnderCursor() {
@@ -52,7 +54,7 @@ export class State {
   moveCursorForward() {
     const startX = this.x;
     this.setX(this.x + 1);
-    if (startX === this.x) {
+    if (startX === this.x && this.y < this.file.lineCount() - 1) {
       this.setX(0);
       this.setY(this.y + 1);
     }
@@ -91,8 +93,12 @@ export class State {
     const x = this.getX() - (isInsertMode ? 1 : 0);
     const y = this.getY();
     this.file.deleteSelection(
-      { x, y },
-      { x, y },
+      { 
+        x1: x, 
+        y1: y,
+        x2: x,
+        y2: y
+      },
     );
     if (isInsertMode) {
       this.moveCursorBackward();

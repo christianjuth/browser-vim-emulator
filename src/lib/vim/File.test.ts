@@ -15,11 +15,10 @@ describe('File', () => {
       const file = new File(TEST_FILE);
       
       file.deleteSelection({
-        y: 0,
-        x: 0,
-      }, {
-        y: 0,
-        x: file.lineLength(0) - 1,
+        y1: 0,
+        x1: 0,
+        y2: 0,
+        x2: file.lineLength(0) - 1,
       })
 
       expect(file.toString()).toBe([
@@ -34,11 +33,10 @@ describe('File', () => {
       const file = new File(TEST_FILE);
 
       file.deleteSelection({
-        x: 0,
-        y: 0,
-      }, {
-        x: 0,
-        y: file.lineCount() - 1,
+        x1: 0,
+        y1: 0,
+        x2: 0,
+        y2: file.lineCount() - 1,
       });
 
       expect(file.toString()).toBe([
@@ -55,11 +53,10 @@ describe('File', () => {
       const file = new File(TEST_FILE);
       
       expect(file.getSelection({
-        y: 0,
-        x: 0,
-      }, {
-        y: 0,
-        x: file.lineLength(0) - 1,
+        y1: 0,
+        x1: 0,
+        y2: 0,
+        x2: file.lineLength(0) - 1,
       })).toBe("The quick brown fox");
     });
 
@@ -67,11 +64,10 @@ describe('File', () => {
       const file = new File(TEST_FILE);
       
       expect(file.getSelection({
-        y: 1,
-        x: 22,
-      }, {
-        y: 3,
-        x: 22,
+        y1: 1,
+        x1: 22,
+        y2: 3,
+        x2: 22,
       })).toBe([
         "g",
         "",
@@ -83,11 +79,10 @@ describe('File', () => {
       const file = new File(TEST_FILE);
 
       expect(file.getSelection({
-        x: 0,
-        y: 0,
-      }, {
-        x: 0,
-        y: file.lineCount() - 1,
+        x1: 0,
+        y1: 0,
+        x2: 0,
+        y2: file.lineCount() - 1,
       })).toBe([
         "T",
         "j",
@@ -100,11 +95,10 @@ describe('File', () => {
       const file = new File(TEST_FILE);
 
       expect(file.getSelection({
-        x: 5,
-        y: 1,
-      }, {
-        x: 10,
-        y: 2,
+        x1: 5,
+        y1: 1,
+        x2: 10,
+        y2: 2,
       })).toBe([
        " over ",
        "uick b"

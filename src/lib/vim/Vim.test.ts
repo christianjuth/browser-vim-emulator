@@ -255,16 +255,36 @@ describe('vim', () => {
 
   describe('insert mode', () => {
     const vim = new Vim({ file: "" });
+    vim.keyPress('i');
 
     test('typing', () => {
-      vim.keyPress('i');
       vim.keyPress('t');
       vim.keyPress('e');
       vim.keyPress('s');
       vim.keyPress('t');
-      vim.keyPress('Escape');
       expect(vim.file.getLine(0)).toBe('test');
     });
+
+    test('Backspace', () => {
+      vim.keyPress('Backspace');
+      expect(vim.file.getLine(0)).toBe('tes');
+      vim.keyPress('Backspace');
+      expect(vim.file.getLine(0)).toBe('te');
+    });
+
+    test('arrow left', () => {
+      vim.keyPress('ArrowLeft');
+      vim.keyPress('ArrowLeft');
+      vim.keyPress('ArrowLeft');
+      expect(vim.getCursorPos()).toEqual({ x: 0, y: 0 });
+    })
+
+    test('arrow left', () => {
+      vim.keyPress('ArrowRight');
+      vim.keyPress('ArrowRight');
+      expect(vim.getCursorPos()).toEqual({ x: 2, y: 0 });
+    })
+
 
   });
 

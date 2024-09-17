@@ -17,11 +17,14 @@ export class File {
     return this.getLine(y)?.length ?? 0;
   }
 
-  deleteSelection(start: { x: number, y: number }, end: { x: number, y: number }, removeEmptyLines = false) {
-    const minY = Math.min(start.y, end.y);
-    const maxY = Math.max(start.y, end.y);
-    const minX = Math.min(start.x, end.x);
-    const maxX = Math.max(start.x, end.x);
+  deleteSelection(
+    coords: { x1: number, y1: number, x2: number, y2: number }, 
+    removeEmptyLines = false
+  ) {
+    const minY = Math.min(coords.y1, coords.y2);
+    const maxY = Math.max(coords.y1, coords.y2);
+    const minX = Math.min(coords.x1, coords.x2);
+    const maxX = Math.max(coords.x1, coords.x2);
 
     let y = 0
     for (const line of this.lines) {
@@ -46,15 +49,18 @@ export class File {
   }
 
   cleanup() {
-    this.lines = this.lines.filter(Boolean);
+    this.lines = this.lines.filter(l => l !== null);
+    if (this.lines.length === 0) {
+      this.lines.push("");
+    }
   }
   
-  getSelection(start: { x: number, y: number }, end: { x: number, y: number }) {
+  getSelection(coords: { x1: number, y1: number, x2: number, y2: number }) {
     let y = 0
     const selection = []
     for (const line of this.lines) {
-      if (line !== null && y >= start.y && y <= end.y) {
-        selection.push(line.slice(start.x, end.x + 1))
+      if (line !== null && y >= coords.y1 && y <= coords.y2) {
+        selection.push(line.slice(coords.x1, coords.x2 + 1))
       }
       y++ 
     }

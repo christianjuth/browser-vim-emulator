@@ -125,6 +125,12 @@ export class Vim {
     }
   }
 
+  keyBufferPop(n: number) {
+    for (let i = 0; i < n; i++) {
+      this.keyBuffer = this.keyBuffer?.prevKey;
+    }
+  }
+
   motionReducer(lastKey: KeyEvent) {
     const prevNumber = lastKey.prevKey?.number;
     switch (lastKey.key) {
@@ -133,24 +139,28 @@ export class Vim {
         repeat(prevNumber || 1, () => {
           this.state.moveCursorBackward();
         });
+        this.keyBufferPop(prevNumber !== undefined ? 2 : 1);
         return;
       case 'j':
       case 'ArrowDown':
         repeat(prevNumber || 1, () => {
           this.state.setY(y => y + 1);
         });
+        this.keyBufferPop(prevNumber !== undefined ? 2 : 1);
         return;
       case 'k':
       case 'ArrowUp':
         repeat(prevNumber || 1, () => {
           this.state.setY(y => y - 1);
         });
+        this.keyBufferPop(prevNumber !== undefined ? 2 : 1);
         return;
       case 'l':
       case 'ArrowRight':
         repeat(prevNumber || 1, () => {
           this.state.moveCursorForward();
         });
+        this.keyBufferPop(prevNumber !== undefined ? 2 : 1);
         return;
       case 'G':
         if (prevNumber) {
@@ -158,6 +168,7 @@ export class Vim {
         } else {
           this.state.setY(this.file.lineCount() - 1);
         }
+        this.keyBufferPop(prevNumber !== undefined ? 2 : 1);
         return;
       case 'g':
         if (lastKey.prevKey?.key === 'g') {
@@ -166,6 +177,7 @@ export class Vim {
           } else {
             this.state.setY(0);
           }
+          this.keyBufferPop(lastKey.prevKey.prevKey?.number !== undefined ? 3 : 2);
         } 
         return;
       case 'W':
@@ -180,11 +192,12 @@ export class Vim {
             this.state.moveCursorForward();
           }
         });
+        this.keyBufferPop(prevNumber !== undefined ? 2 : 1);
         return;
       case 'E':
       case 'e':
         repeat(prevNumber || 1, () => {
-        this.state.moveCursorForward();
+          this.state.moveCursorForward();
           const startLine = this.state.getY();
           const nextState = this.state.clone().moveCursorForward();
           while (nextState && nextState.getCharacterUnderCursor() !== ' ' && nextState.getY() === startLine) {
@@ -195,6 +208,7 @@ export class Vim {
             nextState.moveCursorForward();
           }
         });
+        this.keyBufferPop(prevNumber !== undefined ? 2 : 1);
         return;
       case 'B':
       case 'b':
@@ -208,21 +222,25 @@ export class Vim {
           }
           this.state.moveCursorBackward();
         });
+        this.keyBufferPop(prevNumber !== undefined ? 2 : 1);
         return;
       case '0':
         this.state.setX(0);
+        this.keyBufferPop(1);
         return;
       case '^':
         this.state.setX(0);
         while (this.state.getCharacterUnderCursor() === ' ' && !this.state.isEndOfLine()) {
           this.state.moveCursorForward();
         }
+        this.keyBufferPop(1);
         return;
       case '$':
         if (prevNumber) {
           this.state.setY(y => y + prevNumber - 1);
         }
         this.state.setX(this.file.lineLength(this.state.getY()) - 1);
+        this.keyBufferPop(prevNumber !== undefined ? 2 : 1);
         return;
     }
 
@@ -235,6 +253,7 @@ export class Vim {
         }
         if (nextState.getCharacterUnderCursor() === char) {
           this.state.setX(nextState.getX());
+        this.keyBufferPop(2);
         }
         return;
     }
@@ -248,6 +267,7 @@ export class Vim {
         }
         if (nextState.getCharacterUnderCursor() === char) {
           this.state.setX(x => Math.max(x, nextState.getX() - 1));
+          this.keyBufferPop(2);
         }
         return;
     }
@@ -342,7 +362,30 @@ export class Vim {
       return;
     }
 
+    const x1 = this.state.getX();
+    const y1 = this.state.getY();
+
     this.motionReducer(lastKey);
+
+    const x2 = this.state.getX();
+    const y2 = this.state.getY();
+
+    if (x1 !== x2 || y1 !== y2) {
+      switch (this.keyBuffer?.key) {
+        case 'd':
+          this.mutateState(s => {
+            s.file.deleteSelection({
+              x1,
+              y1,
+              x2,
+              y2,
+            })
+            return s;
+          });
+          delete this.keyBuffer;
+          return;
+      }
+    }
   }
 
   insertReducer(lastKey: KeyEvent) {
@@ -390,20 +433,19 @@ export class Vim {
       case 'd':
         this.mutateState(s => {
           for (const highlight of highlights) {
-            s.file.deleteSelection({
-              x: highlight.x1,
-              y: highlight.y1,
-            }, {
-              x: highlight.x2,
-              y: highlight.y2,  
-            }, this.mode === Mode.VisualLine)
+            s.file.deleteSelection(
+              highlight,
+              this.mode === Mode.VisualLine
+            )
           }
           if (this.mode === Mode.Visual && highlights.length > 1) {
             const yMin = Math.min(...highlights.map(h => h.y1));
             s.file.mergeLines(yMin, yMin + 1)
           }
           s.file.cleanup();
+          s.setY(y => y);
         });
+        this.mode = Mode.Normal;
         break;
     }
   }

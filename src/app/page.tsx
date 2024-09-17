@@ -11,17 +11,29 @@ import {
 } from '@/lib/vim-react';
 
 const INIT_FILE = 
-`# Welcome to Vim!
-# This is an example file to get you started with Vim.
-# You can start typing text here and save the file by pressing :w and then Enter.
-# You can exit Vim by pressing :q and then Enter.
-# You can also save and exit by pressing :wq and then Enter.
-# You can also exit without saving by pressing :q! and then Enter.
-# You can also undo by pressing u.
-# You can also redo by pressing Ctrl-r.
-# You can also copy by pressing y.
-# You can also paste by pressing p.
-# You can also cut by pressing d.`
+`" Example Vim File for Supported Features
+
+" Navigation (gg, G, h, j, k, l, 0, $)
+The quick brown fox
+jumps over the lazy dog
+The quick brown fox
+jumps over the lazy dog
+The quick brown fox
+jumps over the lazy dog
+
+" Deletion (x, dd, 2dd)
+This line will be deleted with 'dd'
+And this one with '2dd'
+
+" Find/To (f, t)
+Use 'f' to move to a character
+Use 't' to move just before a character
+
+" Visual Mode and Block Deletion
+Select and delete parts of this sentence
+
+" Insert Mode (i) and Backspace
+You can insert text here and use Backspace to remove it`
 
 
 export default function Home() {
